@@ -111,11 +111,6 @@ export const LocationCard = () => {
                 watcherRef.current = await Location.watchPositionAsync(
                     locationOptions,
                     async (loc) => {
-                        console.log("Nueva ubicación recibida:", {
-                            coords: loc.coords,
-                            timestamp: new Date(loc.timestamp).toLocaleTimeString()
-                        });
-
                         try {
                             const currentAddress = await Location.reverseGeocodeAsync(loc.coords);
 
@@ -141,10 +136,6 @@ export const LocationCard = () => {
                         }
                     }
                 );
-
-                const headingOptions = {
-                    accuracy: Location.Accuracy.High,
-                };
 
                 headingWatcherRef.current = await Location.watchHeadingAsync((head) => {
                     setLocationData(prev => ({
