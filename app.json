@@ -48,6 +48,12 @@
           "fallbackLocale": "en",
           "availableLocales": ["en", "fr"]
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
+        }
       ]
     ],
     "experiments": {

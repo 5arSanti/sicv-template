@@ -35,3 +35,8 @@ export interface LocalizationInterface {
     locales: Locale[];
     calendars: Calendar[];
 }
+
+export interface LocationInterface {
+    location: Location.LocationObject | null;
+    networkProvider: Promise<void>;
+}

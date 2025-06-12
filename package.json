@@ -41,7 +41,9 @@
     "expo-sensors": "~14.1.4",
     "expo-battery": "~9.1.4",
     "expo-cellular": "~7.1.4",
-    "expo-localization": "~16.1.5"
+    "expo-localization": "~16.1.5",
+    "expo-location": "~18.1.5",
+    "expo-device": "~7.1.4"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
