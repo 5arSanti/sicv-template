@@ -8,41 +8,41 @@ import { ThemedView } from '../ThemedView';
 export interface LocationInterface {
     // Provider Status
     provider: Location.LocationProviderStatus;
-    
+
     // Current Location Data
     currentPosition: Location.LocationObject | null;
     lastKnownPosition: Location.LocationObject | null;
-    
+
     // Heading Information
     heading: {
         magHeading: number;
         trueHeading: number;
         accuracy: number;
     } | null;
-    
+
     // Geocoding Information
     address?: Location.LocationGeocodedAddress[];
     currentAddress?: Location.LocationGeocodedAddress[];
-    
+
     // Activity Information
     activity?: {
         type: 'Automotive' | 'Other';
         confidence: number;
     } | null;
-    
+
     // Motion Information
     motion?: {
         isMoving: boolean;
         speed: number;
         speedAccuracy: number;
     } | null;
-    
+
     // Altitude Information
     altitude?: {
         altitude: number;
         altitudeAccuracy: number;
     } | null;
-    
+
     // Status Information
     isTracking: boolean;
     isHighAccuracy: boolean;
@@ -51,9 +51,9 @@ export interface LocationInterface {
 
 export const LocationCard = () => {
     const [locationData, setLocationData] = useState<LocationInterface>({
-        provider: { 
-            locationServicesEnabled: false, 
-            gpsAvailable: false, 
+        provider: {
+            locationServicesEnabled: false,
+            gpsAvailable: false,
             networkAvailable: false,
             backgroundModeEnabled: false
         },
@@ -101,48 +101,51 @@ export const LocationCard = () => {
                 const provider = await Location.getProviderStatusAsync();
                 setLocationData(prev => ({ ...prev, provider }));
 
-                // Start position tracking with high accuracy
-                watcherRef.current = await Location.watchPositionAsync(
-                    {
-                        accuracy: Location.Accuracy.BestForNavigation,
-                        timeInterval: 1000,
-                        distanceInterval: 1,
-                        mayShowUserSettingsDialog: true,
-                    },
-                    async (loc) => {
-                        // Get current address
-                        const currentAddress = await Location.reverseGeocodeAsync(loc.coords);
-                        
-                        // Get activity if available
-                        const activity = await Location.getCurrentPositionAsync({
-                            accuracy: Location.Accuracy.BestForNavigation,
-                        }).then(pos => ({
-                            type: pos.coords.heading ? 'Automotive' as const : 'Other' as const,
-                            confidence: 1
-                        })).catch(() => null);
+                const locationOptions = {
+                    accuracy: Location.Accuracy.High,
+                    timeInterval: 500,
+                    distanceInterval: 0,
+                    mayShowUserSettingsDialog: true,
+                };
 
-                        setLocationData(prev => ({
-                            ...prev,
-                            currentPosition: loc,
-                            currentAddress,
-                            activity,
-                            motion: {
-                                isMoving: loc.coords.speed ? loc.coords.speed > 0 : false,
-                                speed: loc.coords.speed || 0,
-                                speedAccuracy: 0
-                            },
-                            altitude: {
-                                altitude: loc.coords.altitude || 0,
-                                altitudeAccuracy: loc.coords.altitudeAccuracy || 0
-                            },
-                            isTracking: true,
-                            isHighAccuracy: true,
-                            timestamp: loc.timestamp
-                        }));
+                watcherRef.current = await Location.watchPositionAsync(
+                    locationOptions,
+                    async (loc) => {
+                        console.log("Nueva ubicación recibida:", {
+                            coords: loc.coords,
+                            timestamp: new Date(loc.timestamp).toLocaleTimeString()
+                        });
+
+                        try {
+                            const currentAddress = await Location.reverseGeocodeAsync(loc.coords);
+
+                            setLocationData(prev => ({
+                                ...prev,
+                                currentPosition: loc,
+                                currentAddress,
+                                motion: {
+                                    isMoving: loc.coords.speed ? loc.coords.speed > 0 : false,
+                                    speed: loc.coords.speed || 0,
+                                    speedAccuracy: 0
+                                },
+                                altitude: {
+                                    altitude: loc.coords.altitude || 0,
+                                    altitudeAccuracy: loc.coords.altitudeAccuracy || 0
+                                },
+                                isTracking: true,
+                                isHighAccuracy: true,
+                                timestamp: loc.timestamp
+                            }));
+                        } catch (error) {
+                            console.error("Error al procesar la ubicación:", error);
+                        }
                     }
                 );
 
-                // Start heading tracking
+                const headingOptions = {
+                    accuracy: Location.Accuracy.High,
+                };
+
                 headingWatcherRef.current = await Location.watchHeadingAsync((head) => {
                     setLocationData(prev => ({
                         ...prev,
@@ -150,9 +153,9 @@ export const LocationCard = () => {
                     }));
                 });
 
-                // Get last known position and reverse geocode
                 const last = await Location.getLastKnownPositionAsync();
                 if (last) {
+                    console.log("Última posición conocida:", last);
                     const addr = await Location.reverseGeocodeAsync(last.coords);
                     setLocationData(prev => ({
                         ...prev,
@@ -160,6 +163,7 @@ export const LocationCard = () => {
                         address: addr
                     }));
                 }
+
             } catch (error) {
                 setErrorMsg(`Error al iniciar el seguimiento: ${error}`);
             }
