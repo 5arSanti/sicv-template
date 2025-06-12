@@ -1,9 +1,11 @@
 import { globalStyles } from '@/constants/Styles';
 import { BarometerData } from '@/interfaces/barometer.interface';
+import { BarometerInterface } from '@/interfaces/sensors.interface';
 import { EventSubscription } from 'expo-modules-core';
 import { Barometer } from 'expo-sensors';
 import { useState } from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { JsonViewer } from '../JsonViewer';
 import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
 
@@ -12,7 +14,8 @@ const BarometerCard = () => {
     const [barometerData, setBarometerData] = useState<BarometerData>({
         available: false,
         pressure: 0,
-        relativeAltitude: undefined
+        relativeAltitude: undefined,
+        timestamp: undefined
     });
     const [subscription, setSubscription] = useState<EventSubscription | null>(null);
 
@@ -26,15 +29,13 @@ const BarometerCard = () => {
 
     const subscribe = () => {
         Barometer.isAvailableAsync().then((isAvailable) => {
-            console.log('isAvailable', isAvailable);
             if (isAvailable) {
                 setSubscription(Barometer.addListener((data) => {
-                    console.log('data', data);
-
                     setBarometerData({
                         available: isAvailable,
                         pressure: data.pressure,
-                        relativeAltitude: data.relativeAltitude
+                        relativeAltitude: data.relativeAltitude,
+                        timestamp: data.timestamp
                     });
                 }));
             }
@@ -45,6 +46,13 @@ const BarometerCard = () => {
         subscription && subscription.remove();
         setSubscription(null);
     };
+
+    const barometerInterface: BarometerInterface = {
+        available: barometerData.available,
+        pressure: barometerData.pressure,
+        relativeAltitude: barometerData.relativeAltitude,
+        timestamp: barometerData.timestamp
+    }
 
     return (
         <ThemedView style={globalStyles.stepContainer}>
@@ -59,6 +67,8 @@ const BarometerCard = () => {
             <TouchableOpacity onPress={toggleListener} style={styles.button}>
                 <Text>Toggle listener</Text>
             </TouchableOpacity>
+
+            <JsonViewer data={barometerInterface} title="barometerInterface" />
         </ThemedView>
     );
 }
