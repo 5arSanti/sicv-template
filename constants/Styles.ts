@@ -17,4 +17,12 @@ export const globalStyles = StyleSheet.create({
         left: 0,
         position: 'absolute',
     },
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+      },
+      message: {
+        textAlign: 'center',
+        paddingBottom: 10,
+      },
 });

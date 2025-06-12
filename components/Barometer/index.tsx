@@ -15,7 +15,7 @@ const BarometerCard = () => {
         available: false,
         pressure: 0,
         relativeAltitude: undefined,
-        timestamp: undefined
+        timestamp: null
     });
     const [subscription, setSubscription] = useState<EventSubscription | null>(null);
 
