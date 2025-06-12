@@ -1,6 +1,7 @@
 import { BarometerCard } from '@/components/Barometer';
 import { BatteryCard } from '@/components/Battery';
 import { CellularCard } from '@/components/Cellular';
+import { LocalizationCard } from '@/components/Localization';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -28,6 +29,8 @@ export default function SensorsScreen() {
       <BatteryCard />
 
       <CellularCard />
+
+      <LocalizationCard />
     </ParallaxScrollView>
   );
 }

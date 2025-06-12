@@ -32,11 +32,12 @@ const styles = StyleSheet.create({
         backgroundColor: '#313131',
     },
     scrollView: {
-        maxHeight: 200,
+        // maxHeight: 200,
     },
     jsonText: {
         fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
         color: '#fff',
+        fontSize: 14,
     }
 });
 

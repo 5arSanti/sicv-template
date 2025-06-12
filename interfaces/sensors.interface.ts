@@ -1,4 +1,5 @@
 import { CellularGeneration } from "expo-cellular";
+import { Calendar, Locale } from "expo-localization";
 
 export interface SensorsInterface {
     platform: string;
@@ -28,4 +29,9 @@ export interface CellularInterface {
     countryCode: string | null;
     generation: CellularGeneration | null;
     cellularGeneration: string | null;
+}
+
+export interface LocalizationInterface {
+    locales: Locale[];
+    calendars: Calendar[];
 }
