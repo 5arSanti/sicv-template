@@ -23,8 +23,6 @@ export const PermissionCard = ({
         return null;
     }
 
-    console.log(permission)
-
     if (!permission.granted) {
         return (
             <ThemedView style={[globalStyles.stepContainer, styles.container]}>
