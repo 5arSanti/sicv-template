@@ -1,8 +1,10 @@
 import { globalStyles } from '@/constants/Styles';
 import * as Location from 'expo-location';
 import { useEffect, useRef, useState } from 'react';
+import { StyleSheet, TouchableOpacity } from 'react-native';
 import { JsonViewer } from '../JsonViewer';
 import { PermissionCard } from '../PermissionCard';
+import { ThemedText } from '../ThemedText';
 import { ThemedView } from '../ThemedView';
 
 export interface LocationInterface {
@@ -71,12 +73,85 @@ export const LocationCard = () => {
     });
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [hasPermission, setHasPermission] = useState(false);
+    const [isMonitoring, setIsMonitoring] = useState(false);
 
     const [foregroundPermission, requestForegroundPermission] = Location.useForegroundPermissions();
     const [backgroundPermission, requestBackgroundPermission] = Location.useBackgroundPermissions();
 
     const watcherRef = useRef<Location.LocationSubscription | null>(null);
     const headingWatcherRef = useRef<Location.LocationSubscription | null>(null);
+
+    const stopTracking = () => {
+        watcherRef.current?.remove();
+        headingWatcherRef.current?.remove();
+        watcherRef.current = null;
+        headingWatcherRef.current = null;
+        setIsMonitoring(false);
+        setLocationData(prev => ({ ...prev, isTracking: false }));
+    };
+
+    const startTracking = async () => {
+        try {
+            const provider = await Location.getProviderStatusAsync();
+            setLocationData(prev => ({ ...prev, provider }));
+
+            const locationOptions = {
+                accuracy: Location.Accuracy.High,
+                timeInterval: 500,
+                distanceInterval: 0,
+                mayShowUserSettingsDialog: true,
+            };
+
+            watcherRef.current = await Location.watchPositionAsync(
+                locationOptions,
+                async (loc) => {
+                    try {
+                        const currentAddress = await Location.reverseGeocodeAsync(loc.coords);
+
+                        setLocationData(prev => ({
+                            ...prev,
+                            currentPosition: loc,
+                            currentAddress,
+                            motion: {
+                                isMoving: loc.coords.speed ? loc.coords.speed > 0 : false,
+                                speed: loc.coords.speed || 0,
+                                speedAccuracy: 0
+                            },
+                            altitude: {
+                                altitude: loc.coords.altitude || 0,
+                                altitudeAccuracy: loc.coords.altitudeAccuracy || 0
+                            },
+                            isTracking: true,
+                            isHighAccuracy: true,
+                            timestamp: loc.timestamp
+                        }));
+                    } catch (error) {
+                        setErrorMsg(`Error al procesar la ubicación: ${error}`);
+                    }
+                }
+            );
+
+            headingWatcherRef.current = await Location.watchHeadingAsync((head) => {
+                setLocationData(prev => ({
+                    ...prev,
+                    heading: head
+                }));
+            });
+
+            const last = await Location.getLastKnownPositionAsync();
+            if (last) {
+                const addr = await Location.reverseGeocodeAsync(last.coords);
+                setLocationData(prev => ({
+                    ...prev,
+                    lastKnownPosition: last,
+                    address: addr
+                }));
+            }
+        } catch (error) {
+            setErrorMsg(`Error al iniciar el seguimiento: ${error}`);
+            setIsMonitoring(false);
+        }
+    };
 
     useEffect(() => {
         foregroundPermission?.granted && backgroundPermission?.granted && setHasPermission(true);
@@ -96,80 +171,22 @@ export const LocationCard = () => {
     }, []);
 
     useEffect(() => {
-        const startLocationTracking = async () => {
-            try {
-                const provider = await Location.getProviderStatusAsync();
-                setLocationData(prev => ({ ...prev, provider }));
-
-                const locationOptions = {
-                    accuracy: Location.Accuracy.High,
-                    timeInterval: 500,
-                    distanceInterval: 0,
-                    mayShowUserSettingsDialog: true,
-                };
-
-                watcherRef.current = await Location.watchPositionAsync(
-                    locationOptions,
-                    async (loc) => {
-                        try {
-                            const currentAddress = await Location.reverseGeocodeAsync(loc.coords);
-
-                            setLocationData(prev => ({
-                                ...prev,
-                                currentPosition: loc,
-                                currentAddress,
-                                motion: {
-                                    isMoving: loc.coords.speed ? loc.coords.speed > 0 : false,
-                                    speed: loc.coords.speed || 0,
-                                    speedAccuracy: 0
-                                },
-                                altitude: {
-                                    altitude: loc.coords.altitude || 0,
-                                    altitudeAccuracy: loc.coords.altitudeAccuracy || 0
-                                },
-                                isTracking: true,
-                                isHighAccuracy: true,
-                                timestamp: loc.timestamp
-                            }));
-                        } catch (error) {
-                            console.error("Error al procesar la ubicación:", error);
-                        }
-                    }
-                );
-
-                headingWatcherRef.current = await Location.watchHeadingAsync((head) => {
-                    setLocationData(prev => ({
-                        ...prev,
-                        heading: head
-                    }));
-                });
-
-                const last = await Location.getLastKnownPositionAsync();
-                if (last) {
-                    console.log("Última posición conocida:", last);
-                    const addr = await Location.reverseGeocodeAsync(last.coords);
-                    setLocationData(prev => ({
-                        ...prev,
-                        lastKnownPosition: last,
-                        address: addr
-                    }));
-                }
-
-            } catch (error) {
-                setErrorMsg(`Error al iniciar el seguimiento: ${error}`);
-            }
-        };
-
         if (hasPermission) {
-            startLocationTracking();
+            startTracking();
         }
-
         return () => {
-            watcherRef.current?.remove();
-            headingWatcherRef.current?.remove();
-            setLocationData(prev => ({ ...prev, isTracking: false }));
+            stopTracking();
         };
     }, [hasPermission]);
+
+    const handleToggleMonitoring = async () => {
+        if (isMonitoring) {
+            stopTracking();
+        } else {
+            setIsMonitoring(true);
+            await startTracking();
+        }
+    };
 
     return (
         <ThemedView style={globalStyles.stepContainer}>
@@ -184,6 +201,17 @@ export const LocationCard = () => {
                 }}
             />
 
+            {hasPermission && (
+                <TouchableOpacity 
+                    style={[styles.toggleButton, isMonitoring && styles.toggleButtonActive]} 
+                    onPress={handleToggleMonitoring}
+                >
+                    <ThemedText style={styles.toggleButtonText}>
+                        {isMonitoring ? 'Detener Monitoreo' : 'Iniciar Monitoreo'}
+                    </ThemedText>
+                </TouchableOpacity>
+            )}
+
             {errorMsg && <JsonViewer data={{ error: errorMsg }} title="Error" />}
 
             {locationData && (
@@ -192,3 +220,20 @@ export const LocationCard = () => {
         </ThemedView>
     );
 };
+
+const styles = StyleSheet.create({
+    toggleButton: {
+        padding: 10,
+        borderRadius: 8,
+        backgroundColor: '#eee',
+        marginVertical: 10,
+        alignItems: 'center',
+    },
+    toggleButtonActive: {
+        backgroundColor: '#4CAF50',
+    },
+    toggleButtonText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+});
